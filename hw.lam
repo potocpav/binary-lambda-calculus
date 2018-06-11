@@ -25,11 +25,19 @@
 
 // Logical functions
 #define id (\a a)
-#define not (\a C F T a)
-#define and (\a \b C a F b)
-#define nor (\a \b C F (not a) b)
-#define or (\a \b C T a b)
-#define xor (\a \b C (not a) a b)
+// #define not (\a C F T a)
+// #define and (\a \b C a F b)
+// #define nor (\a \b C F (not a) b)
+// #define or (\a \b C T a b)
+// #define xor (\a \b C (not a) a b)
+#define not (\a a F T)
+#define and (\a \b a b F)
+#define nor (\a \b a F (not b))
+#define or (\b b T)
+#define xor (\a \b a (not b) b)
+#define impl (\a \b or b (not a))
+#define eq (\a \b a b (not b))
+#define atleast2 (\a \b \c or (or (and a b) (and a c)) (and b c))
 
 // List functions
 #define map_step (\fix \f \l l (\x \xs \_ C (f x) (fix f xs)) nil)
@@ -43,10 +51,8 @@
 #define foldr (Y foldr_step)
 #define append_step (\fix \l \m l (\x \xs \_ C x (fix xs m)) m)
 #define append (Y append_step)
-
-// Binary arithmetics
-#define xors  (zipWith xor)
-#define atleast2 (\a \b \c or (or (and a b) (and a c)) (and b c))
+#define init (\l zipWith T l (l F))
+#define last (foldl F id)
 
 // Numbers
 #define n0 (B b0 b0 b0 b0 b0 b0 b0 b0)
@@ -59,6 +65,7 @@
 #define n7 (B b0 b0 b0 b0 b0 b1 b1 b1)
 #define n8 (B b0 b0 b0 b0 b1 b0 b0 b0)
 #define n9 (B b0 b0 b0 b0 b1 b0 b0 b1)
+#define n10 (B b0 b0 b0 b0 b1 b0 b1 b0)
 #define carry (\ab \c C (uncurry atleast2 ab c) (xor (uncurry xor ab) c))
 
 #define add_u8_carry (\l \m foldr (\b \acc C (carry b (acc T) T) (C (carry b (acc T) F) (acc F))) (C b0 F) (zip l m))
@@ -66,12 +73,22 @@
 #define neg_u8 (map not)
 #define inc_u8 (add_u8 n1)
 #define sub_u8 (\a \b add_u8 (inc_u8 a) (neg_u8 b))
+#define lshift_u8 (\a append a (C b0 nil) F)
+#define rshift_u8 (\a C b0 (init a))
+#define geq_u8_step (\fix \ab ab (\h \t \_ eq (h T) (h F) (fix t) (impl (h T) (h F))) T)
+#define geq_u8 (\a \b Y geq_u8_step (zip a b))
+// TODO: rewrite using different primitives (lazy `iterate` comes to mind, or the Y combinator)
+// the fold accumulator contains [partial_res, a_init, b_shifted]
+#define mul_u8 (\a \b foldr (\_ \acc C (last (acc F T) (acc T) (add_u8 (acc T) (acc F F))) (C (init (acc F T)) (lshift_u8 (acc F F)))) (C n0 (C a b)) n0 T)
 
-// #define lshift_u8 ()
+
+#define divrm_lt (\N \d \qr C (append (qr T) (C b0 nil)) (add_u8 (lshift_u8 (qr F)) (N n0 n1)))
+#define divrm_ge (\N \d \qr C (append (qr T) (C b1 nil)) (add_u8 (lshift_u8 (divrm_lt N (sub_u8 (qr F) d))) (N n0 n1)))
+#define divrm_u8 (\n \d foldl (\acc \N ((geq_u8 (acc F) d divrm_ge divrm_lt) N d acc)) (C nil n0) n)
 
 #define print_b (\b C (B b0 b1 b0 b1 b0 b1 b0 b0) (B b0 b1 b0 b0 b0 b1 b1 b0) b)
 #define print_B (map (\x (B b0 b0 b1 b1 b0 b0 b0 x)))
 #define print_digit (\n add_u8 Zero n)
 // #define print_u8 (\n add_u8 Zero n)
 
-\i (append (C6 H E L L O S nil) (C6 H E L L O S (C (print_digit (sub_u8 n9 n9)) (C nl nil))))
+\i (C6 H E L L O S (C (print_digit (divrm_u8 n8 n3 F) ) (C nl nil)))
