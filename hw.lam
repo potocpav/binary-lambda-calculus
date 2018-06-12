@@ -81,14 +81,14 @@
 // the fold accumulator contains [partial_res, a_init, b_shifted]
 #define mul_u8 (\a \b foldr (\_ \acc C (last (acc F T) (acc T) (add_u8 (acc T) (acc F F))) (C (init (acc F T)) (lshift_u8 (acc F F)))) (C n0 (C a b)) n0 T)
 
-
-#define divrm_lt (\N \d \qr C (append (qr T) (C b0 nil)) (add_u8 (lshift_u8 (qr F)) (N n0 n1)))
-#define divrm_ge (\N \d \qr divrm_lt N d (C (qr T) (sub_u8 (qr F) d)))
-#define divrm_u8 (\n \d foldl (\acc \N ((geq_u8 (acc F) d divrm_ge divrm_lt) N d acc)) (C nil n0) n)
+#define push_digit (\r \N add_u8 (lshift_u8 r) (N n0 n1))
+#define divrem_u8 (\n \d foldl (\acc \N (\r C (append (acc T) (C (not (geq_u8 r d)) nil)) (geq_u8 r d (sub_u8 r d) r)) (push_digit (acc F) N)) (C nil n0) n)
+#define div_u8 (\a \b divrem_u8 a b T)
+#define rem_u8 (\a \b divrem_u8 a b F)
 
 #define print_b (\b C (B b0 b1 b0 b1 b0 b1 b0 b0) (B b0 b1 b0 b0 b0 b1 b1 b0) b)
 #define print_B (map (\x (B b0 b0 b1 b1 b0 b0 b0 x)))
 #define print_digit (\n add_u8 Zero n)
-// #define print_u8 (\n add_u8 Zero n)
+#define print_u8 (\n map print_digit ((\m (\o ( C (rem_u8 o n10) (C (rem_u8 m n10) (C (rem_u8 n n10) nil)) )) (div_u8 m n10)) (div_u8 n n10)))
 
-\i (C6 H E L L O S (C (print_digit (divrm_u8 n6 n5 F) ) (C nl nil)))
+\i (print_u8 (mul_u8 (mul_u8 n9 n9) n2))
